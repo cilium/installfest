@@ -1,0 +1,15 @@
+kind: CiliumNetworkPolicy
+apiVersion: cilium.io/v2
+metadata:
+  name: backend-egress-allow-fqdn
+spec:
+  endpointSelector:
+    matchLabels:
+      app: backend
+  egress:
+    - toPorts:
+        - rules:
+            dns:
+              - matchPattern: "*"
+    - toFQDNs:
+        - matchName: kubernetes.io
