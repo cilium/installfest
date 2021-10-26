@@ -329,7 +329,7 @@ Again, this also is an optional component that is disabled by default.
 Enable the optional Hubble UI component:
 
 ```sh
-cilium hubble enable
+cilium hubble enable --ui
 ```
 
 Take a look at the pods again to see what happened under the hood:
