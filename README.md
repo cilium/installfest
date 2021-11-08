@@ -22,7 +22,7 @@ To ensure a smooth Installfest, please make sure your local environment is set u
 
 ### Preparing for the event
 
-- Please run `minikube start --network-plugin=cni` a few hours / days before the Installfest in order to download Minikube images, which can take some time.
+- Please run `minikube start --network-plugin=cni --cni=false --kubernetes-version=1.21.6` a few hours / days before the Installfest in order to download Minikube images, which can take some time.
 - [Download](https://github.com/cilium/installfest/archive/refs/heads/main.zip) or `git clone` this repository to have a local copy of the resources used during the Installfest.
 - Make sure to have your computer fully charged or plugged in, internet connection up and running, water and snacks at your disposal, and make yourself comfortable :)
 
