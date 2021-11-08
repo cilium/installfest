@@ -5,7 +5,7 @@ Documentation: https://minikube.sigs.k8s.io/docs/commands/start/
 Run the following command to set up your local Minikube cluster:
 
 ```sh
-minikube start --network-plugin=cni
+minikube start --network-plugin=cni --cni=false --kubernetes-version=1.21.6
 ```
 
 We can check that the cluster has properly started by verifying the current `kubectl` context is `minikube`:
