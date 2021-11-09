@@ -92,7 +92,7 @@ cilium connectivity test
 Once done, clean up the connectivity test namespace:
 
 ```sh
-kubectl delete ns cilium-test&
+kubectl delete ns cilium-test --wait=false
 ```
 
 # Network Policies
