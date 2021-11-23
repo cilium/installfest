@@ -122,11 +122,9 @@ In Kubernetes, all traffic is allowed by default. Check connectivity between pod
 
 ```sh
 FRONTEND=$(kubectl get pods -l app=frontend -o jsonpath='{.items[0].metadata.name}')
-echo ${FRONTEND}
 NOT_FRONTEND=$(kubectl get pods -l app=not-frontend -o jsonpath='{.items[0].metadata.name}')
-echo ${NOT_FRONTEND}
-kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080
-kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080
+kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
+kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
 ```
 
 Let's disallow traffic by applying a network policy.
@@ -143,8 +141,8 @@ kubectl get netpol
 And check that we traffic is now denied:
 
 ```sh
-kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080
-kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080
+kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
+kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
 ```
 
 The network policy correctly switched the default ingress behavior from default allow to default deny.
@@ -163,8 +161,8 @@ Apply the new policy and check that connectivity has been restored, but only fro
 
 ```sh
 kubectl create -f backend-allow-ingress-frontend.yaml
-kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080
-kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080
+kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
+kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
 ```
 
 Note that this is working despite the fact we did not delete the previous `backend-ingress-deny` policy:
@@ -190,7 +188,6 @@ Again, in Kubernetes, all traffic is allowed by default, and since we did not ap
 
 ```sh
 BACKEND=$(kubectl get pods -l app=backend -o jsonpath='{.items[0].metadata.name}')
-echo ${BACKEND}
 kubectl exec -ti ${BACKEND} -- curl -Ik --connect-timeout 5 https://kubernetes.io | head -1
 kubectl exec -ti ${BACKEND} -- curl -Ik --connect-timeout 5 https://cilium.io | head -1
 ```
@@ -300,12 +297,14 @@ hubble observe
 hubble observe -f
 ```
 
-If we try to spawn some network activity between our frontends and backend again, we might see it pop up in the feed:
+If we open a separate terminal and generate some network activity between our frontends and backend again, we will see it pop up in the feed:
 
 ```sh
+FRONTEND=$(kubectl get pods -l app=frontend -o jsonpath='{.items[0].metadata.name}')
+NOT_FRONTEND=$(kubectl get pods -l app=not-frontend -o jsonpath='{.items[0].metadata.name}')
 for i in {1..10}; do
-  kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080
-  kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080
+  kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
+  kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
 done
 ```
 
