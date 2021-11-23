@@ -14,15 +14,23 @@ We can check that the cluster has properly started by verifying the current `kub
 kubectl config current-context
 ```
 
-And listing the pods in the cluster:
+And listing the nodes and pods in the cluster:
 
 ```sh
+kubectl get nodes
 kubectl get pods -A
 ```
 
-Note that the `coredns` pod is stuck in `ContainerCreating`: this is normal as our cluster does not have any CNI installed for now.
+Depending on your local environment and Minikube version, a CNI might or might not have been installed automatically by Minikube.
+Ideally, no CNI has been installed and you will see the Minikube node marked as `NotReady` and `coredns` pod failing to start.
+However we can continue even if a CNI has been installed and node/`coredns` are ready, as the installation will override the CNI and restart unmanaged pods.
 
 # Cilium
+
+Documentation:
+
+- https://docs.cilium.io/en/stable/concepts/overview/
+- https://docs.cilium.io/en/stable/gettingstarted/
 
 We will start by installing the `cilium` CLI and then installing Cilium in our cluster.
 
@@ -61,6 +69,8 @@ cilium status
 cilium install --help
 ```
 
+As we can see, `cilium install` offers various configuration knobs that can be leveraged to tweak Cilium to our needs.
+
 ## Install Cilium in the Minikube cluster
 
 Install Cilium:
@@ -69,27 +79,47 @@ Install Cilium:
 cilium install
 ```
 
-Then verify the installation:
+In this example we use the default configuration: note how `cilium install` automatically chooses a default configuration based on the detected environment, and then creates various Kubernetes objects in order to install Cilium.
+Once done, we then verify the installation as suggested:
 
 ```sh
 cilium status
 ```
 
-Take a look at the pods again to see what happened under the hood:
+Note how `cilium status` is reporting information on both:
+
+- Cilium Agents, which run on each node in the cluster (scheduled via `DaemonSet`) and are responsible for the actual operations (managing eBPF programs for pod networking).
+- Cilium Operator, which is responsible for cluster-wide operations such as IPAM or `kvstore` operations (scheduled via `Deployment`).
+
+If we want to take a look under the hood:
 
 ```sh
+kubectl get nodes
 kubectl get pods -A
+kubectl get cm cilium-config -o yaml -n kube-system
 ```
 
-Cilium is now properly installed and manages connectivity within the cluster, allowing `coredns` to start properly.
+- The Minikube node should be correctly marked as `Ready`.
+- The Cilium pods as shown in `cilium status` have been added to the `kube-system` namespace.
+- The Cilium configuration is stored in a ConfigMap.
 
-We can verify connectivity by running a connectivity test (which will be deployed in namespace `cilium-test`):
+Cilium is now properly installed and manages connectivity within the cluster.
+
+We can verify connectivity by running a connectivity test:
 
 ```sh
 cilium connectivity test
 ```
 
-Once done, clean up the connectivity test namespace:
+This will deploy test pods in the `cilium-test` namespace and go through our CLI's test suite.
+The test suite is designed as a complementary check to `cilium status`, verifying that Cilium is correctly handling connectivity in various scenarios (e.g. with and without network policies).
+It's explicitly intended to be run on any cluster any time you want to check Cilium is working properly: it auto-detects the environment/configuration and automatically chooses which tests to run.
+
+Since the test takes a little while to run, an additional information: Cilium can be installed via the CLI as we just did, or via Helm if better suited to your use case (see our documentation: https://docs.cilium.io/en/stable/gettingstarted/k8s-install-helm/).
+
+No matter how Cilium was installed (CLI or Helm), you can always use the Cilium CLI to interact with Cilium: we definitely recommend you to run `cilium connectivity test` at least once after any Cilium install.
+
+Once done with the connectivity test, clean up the test namespace:
 
 ```sh
 kubectl delete ns cilium-test --wait=false
@@ -152,15 +182,15 @@ We can do it by crafting a new network policy manually, but we can also use the 
 
 - Go to https://networkpolicy.io/editor.
 - Upload our initial `backend-ingress-deny` policy.
-- Rename the network policy to `backend-allow-ingress-frontend` (using the `Edit` button in the center).
-- On the ingress side, add `app=frontend` as `podSelector` for pods in the same namespace.
+- Rename the network policy to `backend-ingress-allow-frontend` (using the **Edit** button in the center).
+- On the ingress side **In Namespace** on the left, add a **pod selector** rule with expression `app=frontend`.
 - Inspect the ingress flow colors: the policy will deny all ingress traffic to pods labelled `app=backend`, except for traffic coming from pods labelled `app=frontend`.
 - Download the policy YAML file.
 
 Apply the new policy and check that connectivity has been restored, but only from the frontend:
 
 ```sh
-kubectl create -f backend-allow-ingress-frontend.yaml
+kubectl create -f backend-ingress-allow-frontend.yaml
 kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
 kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080 | head -1
 ```
@@ -216,8 +246,17 @@ In a real world scenario, cluster administrators may leverage network policies a
 
 # Hubble
 
-By default, Cilium acts only as a CNI and is thus mostly responsible for networking, though it can help a bit with security (e.g. advanced network policies).
-To take full advantage of eBPF deep observability and security capabilities, we must enable the optional Hubble component (which is disabled by default).
+Documentation:
+
+- https://docs.cilium.io/en/stable/gettingstarted/hubble_setup/
+- https://docs.cilium.io/en/stable/gettingstarted/hubble_cli/
+- https://docs.cilium.io/en/stable/gettingstarted/hubble/
+
+Hubble offers deep observability capabilities thanks to eBPF, but by default is only exposed locally via gRPC from the Cilium Agents.
+For convenience, Cilium offers optional components to allow accessing Hubble data in a user-friendly way:
+
+- Hubble Relay: provides cluster-wide observability via the Hubble CLI.
+- Hubble UI: user-friendly web UI (requires Hubble Relay).
 
 ## Install the Hubble CLI
 
@@ -257,26 +296,37 @@ hubble observe --help
 
 ## Enable Hubble in Cilium
 
-Enable the optional Hubble component:
+We can use the Cilium CLI to reconfigure Cilium and enable Hubble:
 
 ```sh
-cilium hubble enable
+cilium hubble enable --ui --wait=false
 ```
 
-Take a look at the pods again to see what happened under the hood:
+Note the optional flags:
+
+- `--ui` to enable both the required Hubble Relay component which we will showcase first, and the optional Hubble UI component which we will showcase afterwards.
+- `--wait=false` to avoid waiting for the pods to be ready, just so we can have a look at what happened under the hood:
 
 ```sh
 kubectl get pods -A
+kubectl get cm -n kube-system
 ```
 
-Cilium agents are restarting, and a new Hubble Relay pod is now present.
-We can wait for Cilium and Hubble to be ready by running:
+With the reconfiguration:
+
+- New Hubble pods for both components have been added to the `kube-system` namespace.
+- The `cilium-config` ConfigMap has been updated.
+- New Hubble ConfigMaps for both components have been added.
+
+Since we bypassed the wait, we can wait for Cilium and Hubble to be ready by running `cilium status` with the optional `--wait` flag:
 
 ```sh
 cilium status --wait
 ```
 
-Once ready, we can locally port-forward to the Hubble pod:
+Note that `cilium status` now displays additional information regarding Hubble components.
+
+Once ready, we can locally port-forward to Hubble Relay:
 
 ```sh
 cilium hubble port-forward&
@@ -322,41 +372,7 @@ This is really handy when developing / debugging network policies.
 
 ## Hubble UI
 
-Not only does Hubble allow to inspect flows from the command line, it also allows us to see them in real time on a graphical service map via Hubble UI.
-Again, this also is an optional component that is disabled by default.
-
-Enable the optional Hubble UI component:
-
-```sh
-cilium hubble enable --ui
-```
-
-Take a look at the pods again to see what happened under the hood:
-
-```sh
-kubectl get pods -A
-```
-
-Cilium agents are restarting, and a new Hubble UI pod is now present on top of the Hubble Relay pod.
-As above, we can wait for Cilium and Hubble to be ready by running:
-
-```sh
-cilium status --wait
-```
-
-And then check Hubble status:
-
-```
-hubble status
-```
-
-> Note: our earlier `cilium hubble port-forward` should still be running (can be checked by running `jobs` or `ps aux | grep "cilium hubble port-forward"`).
-> If it does not, `hubble status` will fail and we have to run it again:
->
-> ```sh
-> cilium hubble port-forward&
-> hubble status
-> ```
+Since we enabled the additional Hubble UI component, not only can we inspect flows from the command line, we can also see them in real time on a graphical service map.
 
 To start Hubble UI:
 
@@ -365,31 +381,26 @@ cilium hubble ui
 ```
 
 The browser should automatically open http://localhost:12000/ (open it manually if not).
-We can then access the graphical service map by selecting our `default` namespace, and generating some network activity again:
+We can then access the graphical service map by selecting a namespace.
 
-```sh
-for i in {1..10}; do
-  kubectl exec -ti ${FRONTEND} -- curl -I --connect-timeout 5 backend:8080
-  kubectl exec -ti ${NOT_FRONTEND} -- curl -I --connect-timeout 5 backend:8080
-done
-```
-
-Hubble flows are displayed in real time at the bottom, with a visualization of the namespace objects in the center.
-Click on any flow, and click on any property from the right side panel: notice that the filters at the top of the UI have been updated accordingly.
-
-Let's run a connectivity test again and see what happens in Hubble UI in the `cilium-test` namespace:
+In this example, we will generate some network activity by running a connectivity test in a separate terminal:
 
 ```sh
 cilium connectivity test
 ```
 
-We can see that Hubble UI is not only capable of displaying flows within a namespace, it also helps visualizing flows going in or out.
+The `cilium-test` namespace should now be available from Hubble UI.
+
+Hubble flows (identical to those from `hubble observe`) are displayed in real time at the bottom, with a visualization of the namespace objects in the center.
+Click on any flow, and click on any property from the right side panel: notice that the filters at the top of the UI have been updated accordingly.
+
+After some time, the connectivity test will run tests reaching out to the outside world: Hubble observes not only flows within our cluster but also flows going in or out.
 
 # Conclusion
 
 In this Installfest, we have used Cilium and Hubble CLIs to install Cilium in a Kubernetes cluster, and then manipulated Network Policies and Hubble.
 We are not going to showcase them in this demo, but Cilium supports many more features.
-To highlight some of them which you might want to explore as a next step building upon the knowledge gained during this Installfest:
+To highlight some which you might want to explore next:
 
 ## Encryption
 
@@ -410,12 +421,18 @@ Documentation:
 - https://docs.cilium.io/en/stable/gettingstarted/clustermesh/clustermesh/
 - https://docs.cilium.io/en/stable/gettingstarted/external-workloads/
 
-Cilium support meshing together multiple clusters or connecting non-Kubernetes workloads (e.g. VMs) to a Kubernetes cluster.
+Cilium supports meshing together multiple clusters or connecting non-Kubernetes workloads (e.g. VMs) to a Kubernetes cluster.
 Akin to Hubble, clustermesh capabilities are an optional component managed from the Cilium CLI:
 
 ```sh
 cilium clustermesh --help
 ```
+
+## Slack
+
+Thank you for following the Installfest :)
+If you have any questions or topics you'd like to discuss, now is a good time.
+You are also most welcome to join our Slack at https://cilium.herokuapp.com/.
 
 # Clean up
 
