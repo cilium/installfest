@@ -7,6 +7,13 @@ Our goal is to provide anyone interested in Cilium with step-by-step instruction
 
 > Note: the step-by-step instructions below can still be followed offline should you prefer to run through on your own.
 
+## Registering for the Installfest
+
+Two schedules are available to accommodate for EMEA and NA timezones:
+
+- EMEA: https://calendly.com/cilium-events/cilim-installfest-emea
+- NA: https://calendly.com/cilium-events/cilium-installfest-na
+
 ## Before the Installfest
 
 To ensure a smooth Installfest, please make sure your local environment is set up and ready before the event.
