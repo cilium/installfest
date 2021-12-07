@@ -15,7 +15,7 @@ To ensure a smooth Installfest, please make sure your local environment is set u
 
 - Familiarity with command line usage and basic Kubernetes operations
 - A Linux or Intel-based Mac machine with `kubectl` installed: https://kubernetes.io/docs/tasks/tools/#kubectl
-- Minikube installed (>= 1.5.2): https://minikube.sigs.k8s.io/docs/start/
+- Minikube installed (>= 1.12.0): https://minikube.sigs.k8s.io/docs/start/
 
 > Note: while we strongly recommend using Minikube, the Installfest may also be followed on any GKE, EKS, or AKS cluster, though you will not get support from the staff in case of cluster-related issues during the event.
 > See our documentation for more details on preparing a GKE, EKS, or AKS cluster for Cilium: https://docs.cilium.io/en/stable/gettingstarted/
