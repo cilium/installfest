@@ -2,10 +2,10 @@
 
 Welcome! This repository contains documentation and resources for [Cilium](https://github.com/cilium/cilium) Installfest.
 
-The Installfest is a live community event where experienced Cilium users will help you set up Cilium and give you a hands-on overview of its capabilities.
-Our goal is to provide anyone interested in Cilium with step-by-step instructions for quickly installing Cilium and manipulating it while illustrating real-world use cases.
+The Installfest is a live community event where experienced Cilium users will help you set up Cilium and answer your questions around specific setups or features.
+Our goal is to provide anyone interested in Cilium an interactive opportunity to learn about its capabilities and how they could be tailored to their needs.
 
-> Note: the step-by-step instructions below can still be followed offline should you prefer to run through on your own.
+> Looking for offline resources to follow on your own? We recommend you instead try our [Cilium tutorial](https://play.instruqt.com/isovalent/invite/cadz85qeaygc).
 
 ## Registering for the Installfest
 
@@ -22,23 +22,25 @@ To ensure a smooth Installfest, please make sure your local environment is set u
 
 - Familiarity with command line usage and basic Kubernetes operations
 - A Linux or Intel-based Mac machine with `kubectl` installed: https://kubernetes.io/docs/tasks/tools/#kubectl
-- Minikube installed (>= 1.12.0): https://minikube.sigs.k8s.io/docs/start/
+- [Minikube](https://minikube.sigs.k8s.io/docs/start/) (>= 1.12.0) or [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) (>= 0.7.0) installed
 
-> Note: while we strongly recommend using Minikube, the Installfest may also be followed on any GKE, EKS, or AKS cluster, though you will not get support from the staff in case of cluster-related issues during the event.
+> Note: we recommend using local clusters such as Minikube or Kind when playing with Cilium for testing, but the same could be done on any GKE, EKS, or AKS cluster.
 > See our documentation for more details on preparing a GKE, EKS, or AKS cluster for Cilium: https://docs.cilium.io/en/stable/gettingstarted/
 
 ### Checklist
 
-- Run `minikube start --network-plugin=cni --cni=false --kubernetes-version=1.21.6` a few hours / days before the Installfest in order to download Minikube images, which can take some time.
-- [Download](https://github.com/cilium/installfest/archive/refs/heads/main.zip) or `git clone` this repository to have a local copy of the resources used during the Installfest.
+- Check that starting a local cluster works properly:
+  - Minikube: run `minikube start --network-plugin=cni --cni=false --kubernetes-version=1.21.6`
+  - Kind: run `curl -LO https://raw.githubusercontent.com/cilium/cilium/1.11.0/Documentation/gettingstarted/kind-config.yaml && kind create cluster --config=kind-config.yaml`
+- [Download](https://github.com/cilium/installfest/archive/refs/heads/main.zip) or `git clone` this repository to have a local copy of the Installfest resources we might use.
 - Make sure your computer is fully charged or plugged in, internet connection is up and running, water and snacks are at your disposal, and make yourself comfortable :)
 
 ## During the Installfest
 
-The staff will introduce itself and give an overview of what we will be covering.
-We will then all follow the step-by-step instructions located in [the `installfest` directory](./installfest).
+The staff will introduce itself and give an overview of the session.
+We will start by installing Cilium on our local clusters, using the resources in [the `installfest` directory](./installfest) for guidance.
+Afterwards, we will discuss and choose together what to explore depending on the audience's wishes.
 
-Please be respectful and patient in all circumstances, and keep microphones muted while the presentation is ongoing.
-
-If at any point you are lost or something is not working, reach out for help via chat.
-All questions are welcome, no matter how stupid they may seem :)
+All questions are welcome :)
+Don't hesitate to reach out either by opening the microphone or via chat.
+Please be respectful and patient in all circumstances, and keep microphones muted when not talking.
