@@ -5,7 +5,7 @@ Welcome! This repository contains documentation and resources for [Cilium](https
 The Installfest is a live community event where experienced Cilium users will help you set up Cilium and answer your questions around specific setups or features.
 Our goal is to provide anyone interested in Cilium an interactive opportunity to learn about its capabilities and how they could be tailored to their needs.
 
-> Looking for offline resources to follow on your own? We recommend you instead try our [Cilium tutorial](https://play.instruqt.com/isovalent/invite/cadz85qeaygc).
+> Looking for lab resources to follow on your own? We recommend you instead try a [Cilium lab tutorial](https://cilium.io/enterprise/#trainings).
 
 ## Registering for the Installfest
 
