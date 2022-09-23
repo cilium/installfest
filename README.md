@@ -1,3 +1,9 @@
+# Archival note
+
+The Installfest has now been superseded by the **Cilium Introduction and Live Q&A** and the **Cilium lab tutorials**. Head over to https://cilium.io/get-started/ to learn more.
+
+---
+
 # Cilium Installfest
 
 Welcome! This repository contains documentation and resources for [Cilium](https://github.com/cilium/cilium) Installfest.
